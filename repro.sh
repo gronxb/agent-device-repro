@@ -43,6 +43,11 @@ STATE_DIR="${TMPDIR:-/tmp}/agent-device-repro-edge-swipe"
 ad() {
   $AGENT_DEVICE --state-dir "$STATE_DIR" --session edge-swipe --platform ios --udid "$UDID" "$@"
 }
+cleanup() {
+  ad close >/dev/null 2>&1 || true
+  $AGENT_DEVICE daemon stop --state-dir "$STATE_DIR" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
 "$ROOT/build.sh" "$UDID"
 echo "agent-device: $($AGENT_DEVICE --version)"
@@ -81,6 +86,4 @@ run_case "left-edge -> right-edge recognizer" left-edge 0.98 0.15 "edge: 1" -edg
 run_case "right-edge -> UINavigationController pop" right-edge 0.0 0.85 "nav root" \
   -nav YES -contentPop NO
 
-ad close >/dev/null 2>&1 || true
-$AGENT_DEVICE daemon stop --state-dir "$STATE_DIR" >/dev/null 2>&1 || true
 exit "$failed"

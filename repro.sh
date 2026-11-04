@@ -54,6 +54,8 @@ trap cleanup EXIT
 echo "agent-device: $($AGENT_DEVICE --version)"
 echo "simulator: $(xcrun simctl list devices | grep "$UDID" | sed 's/^ *//')"
 echo "driver: $DRIVER"
+echo "HID touchscreens:"
+xcrun simctl spawn "$UDID" "$ROOT/build/touchscreens"
 echo
 
 # swipe <agent-device preset> <probe fromX> <probe toX>
@@ -63,6 +65,10 @@ swipe() {
   else
     ad gesture swipe "$1" >/dev/null
   fi
+}
+
+selection_lines() {
+  grep -h 'AGENT_DEVICE_RUNNER_EDGE_TOUCHSCREEN' "$STATE_DIR"/sessions/edge-swipe/runner.log 2>/dev/null || true
 }
 
 # run_case <label> <preset> <fromX> <toX> <expected text> <launch flags...>
@@ -75,11 +81,17 @@ run_case() {
   sleep 2
   # Attach the session to the running app. It keeps the launch flags.
   ad open "$BUNDLE" >/dev/null
+  logged="$(selection_lines | wc -l)"
   swipe "$preset" "$from" "$to"
   sleep 1.5
   screen="$(ad snapshot | grep -oE '"(edge|pan): [0-9]+"|"last: [^"]*"|"nav (root|pushed)"' | tr '\n' ' ')"
   if echo "$screen" | grep -q "\"$expected\""; then result=PASS; else result=FAIL; failed=1; fi
   printf '%s  %-46s expected "%s"\n      %s\n' "$result" "$label" "$expected" "$screen"
+  # The agent-device runner logs the touchscreen service each edge touch was sent through.
+  if [ "$DRIVER" = agent-device ]; then
+    selected="$(selection_lines | tail -n +"$((logged + 1))" | tail -1 | sed 's/.*AGENT_DEVICE_RUNNER_EDGE_TOUCHSCREEN //')"
+    printf '      selected: %s\n' "${selected:-<no selection logged>}"
+  fi
 }
 
 run_case "right-edge -> left-edge recognizer" right-edge 0.0 0.85 "edge: 1"

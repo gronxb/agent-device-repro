@@ -21,4 +21,8 @@ xcrun --sdk iphonesimulator clang -fobjc-arc -isysroot "$SDK" -target "$TARGET" 
   "$ROOT/probe/probe.m" -framework Foundation -framework IOKit -o "$OUT/probe"
 codesign --force --sign - "$OUT/probe" >/dev/null 2>&1
 
+xcrun --sdk iphonesimulator clang -fobjc-arc -isysroot "$SDK" -target "$TARGET" \
+  "$ROOT/probe/touchscreens.m" -framework Foundation -framework IOKit -o "$OUT/touchscreens"
+codesign --force --sign - "$OUT/touchscreens" >/dev/null 2>&1
+
 xcrun simctl install "$UDID" "$APP"

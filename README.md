@@ -28,8 +28,18 @@ To test an agent-device source checkout:
 AGENT_DEVICE="node /path/to/agent-device/bin/agent-device.mjs" ./repro.sh
 ```
 
-`repro.sh` builds the app with `swiftc`, installs it, runs three cases, and exits with `1` if a
-case fails.
+`repro.sh` builds the app with `swiftc`, installs it, runs three edge cases and two controls, and
+exits with `1` if a case fails. It first lists the simulator's touchscreen HID services
+(`HID touchscreens:`). With agent-device, each edge case also prints the service the runner sent the
+touch through (`selected:`), from the runner's `AGENT_DEVICE_RUNNER_EDGE_TOUCHSCREEN` log line.
+
+To test the fix in [callstack/agent-device#4211](https://github.com/callstack/agent-device/pull/4211):
+
+```sh
+git clone -b fix/ios-simulator-edge-swipe https://github.com/gronxb/agent-device.git
+(cd agent-device && pnpm install --frozen-lockfile && pnpm build)
+AGENT_DEVICE="node $PWD/agent-device/bin/agent-device.mjs" ./agent-device-repro/repro.sh <udid>
+```
 
 ## Current result (red)
 
@@ -72,7 +82,8 @@ An XCTest synthesized touch gives `edgeType=0` even at x = 0.
 | --- | --- |
 | [`App/main.swift`](App/main.swift) | UIKit app: an edge recognizer, a control pan, and a navigation mode. |
 | [`probe/probe.m`](probe/probe.m) | Edge-marked HID touch that shows the expected behavior. |
-| [`build.sh`](build.sh) | Builds and installs the app, and builds the probe. |
+| [`probe/touchscreens.m`](probe/touchscreens.m) | Lists the simulator's touchscreen HID services and their properties. |
+| [`build.sh`](build.sh) | Builds and installs the app, and builds the probes. |
 | [`repro.sh`](repro.sh) | Runs the cases with agent-device or the probe. |
 
 App launch flags: `-edges right` watches the right edge. `-nav YES -contentPop NO` shows a

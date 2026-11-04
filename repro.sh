@@ -3,7 +3,8 @@
 #
 # usage: ./repro.sh [--driver agent-device|probe] [simulator-udid]
 #
-#   --driver agent-device  (default) swipe with `agent-device gesture swipe <preset>`.
+#   --driver agent-device  (default) swipe with `agent-device gesture swipe <preset>`, then run
+#                          two controls: an in-page swipe and a pan must stay plain touches.
 #   --driver probe         swipe with probe/probe.m, an edge-marked HID touch.
 #                          This is the expected behavior; every case passes.
 #
@@ -85,5 +86,30 @@ run_case "right-edge -> left-edge recognizer" right-edge 0.0 0.85 "edge: 1"
 run_case "left-edge -> right-edge recognizer" left-edge 0.98 0.15 "edge: 1" -edges right
 run_case "right-edge -> UINavigationController pop" right-edge 0.0 0.85 "nav root" \
   -nav YES -contentPop NO
+
+# Controls: ordinary gestures stay plain touches, so the pan fires and the edge recognizer does not.
+run_control() {
+  label="$1"
+  shift
+  xcrun simctl terminate "$UDID" "$BUNDLE" >/dev/null 2>&1 || true
+  xcrun simctl launch "$UDID" "$BUNDLE" >/dev/null
+  sleep 2
+  ad open "$BUNDLE" >/dev/null
+  ad "$@" >/dev/null
+  sleep 1.5
+  screen="$(ad snapshot | grep -oE '"(edge|pan): [0-9]+"|"last: [^"]*"' | tr '\n' ' ')"
+  if echo "$screen" | grep -q '"edge: 0"' && echo "$screen" | grep -q '"pan: 1"'; then
+    result=PASS
+  else
+    result=FAIL
+    failed=1
+  fi
+  printf '%s  %-46s expected "edge: 0", "pan: 1"\n      %s\n' "$result" "$label" "$screen"
+}
+
+if [ "$DRIVER" = agent-device ]; then
+  run_control "control: gesture swipe right (in-page)" gesture swipe right
+  run_control "control: gesture pan" gesture pan 200 300 -120 0 300
+fi
 
 exit "$failed"

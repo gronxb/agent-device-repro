@@ -49,7 +49,7 @@ xcrun simctl boot "$UDID" && xcrun simctl bootstatus "$UDID"
 ./repro.sh "$UDID"         # HID touchscreens: ... Transport=<missing>
 ```
 
-Without [`b18a49d35`](https://github.com/gronxb/agent-device/commit/b18a49d35) of #4211, agent-device fails the
+Without [`b18a49d35`](https://github.com/gronxb/agent-device/commit/b18a49d35) of [#4211](https://github.com/callstack/agent-device/pull/4211), agent-device fails the
 headless case with `display 1 has no simulator touchscreen HID service`.
 
 To test the fix in [callstack/agent-device#4211](https://github.com/callstack/agent-device/pull/4211):

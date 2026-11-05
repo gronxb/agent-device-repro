@@ -33,6 +33,25 @@ exits with `1` if a case fails. It first lists the simulator's touchscreen HID s
 (`HID touchscreens:`). With agent-device, each edge case also prints the service the runner sent the
 touch through (`selected:`), from the runner's `AGENT_DEVICE_RUNNER_EDGE_TOUCHSCREEN` log line.
 
+### Touchscreen services: Device Hub or headless
+
+The touchscreen HID services depend on how the simulator is shown, not on the iOS runtime:
+
+- When Xcode's Device Hub shows the simulator, its touchscreen names `Transport=CoreDevice`.
+- When the simulator is booted headless (`xcrun simctl boot`, no Device Hub window), as in CI,
+  its touchscreen names no `Transport` (`Transport=<missing>`).
+
+To test the headless case, boot a simulator that Device Hub does not show:
+
+```sh
+UDID=$(xcrun simctl create "Edge Repro headless" com.apple.CoreSimulator.SimDeviceType.iPhone-16e)
+xcrun simctl boot "$UDID" && xcrun simctl bootstatus "$UDID"
+./repro.sh "$UDID"         # HID touchscreens: ... Transport=<missing>
+```
+
+Without [`b18a49d35`](https://github.com/gronxb/agent-device/commit/b18a49d35) of #4211, agent-device fails the
+headless case with `display 1 has no simulator touchscreen HID service`.
+
 To test the fix in [callstack/agent-device#4211](https://github.com/callstack/agent-device/pull/4211):
 
 ```sh
